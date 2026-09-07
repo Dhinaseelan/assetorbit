@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Organization {
+  id           String              @id @default(uuid())
+  name         String
+  slug         String              @unique // acme-corp, stark-tech
+  domain       String?             // acme.com
+  plan         String              @default("Enterprise") // Free, Pro, Enterprise
+  users        User[]
+  assets       Asset[]
+  assignments  AssetAssignment[]
+  maintenance  MaintenanceRecord[]
+  tickets      Ticket[]
+  auditLogs    AuditLog[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+}
+
+model User {
+  id             String            @id @default(uuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  email          String            @unique
+  passwordHash   String
+  role           String            // ADMIN, IT_DEPT, HR_DEPT, MANAGER, EMPLOYEE
+  department     String
+  assignments    AssetAssignment[]
+  tickets        Ticket[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+}
+
+model Asset {
+  id             String              @id @default(uuid())
+  organizationId String
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assetTag       String              // e.g. AST-1001
+  name           String
+  serialNumber   String
+  category       String              // Laptop, Desktop, Monitor, Mobile, Software, Furniture
+  status         String              // Available, Assigned, Maintenance, Retired
+  condition      String              // Excellent, Good, Fair, Poor
+  location       String
+  purchaseDate   DateTime
+  purchaseCost   Float
+  expectedYears  Int                 @default(3)
+  warrantyExpiry DateTime
+  qrCodeUrl      String?
+  assignments    AssetAssignment[]
+  maintenance    MaintenanceRecord[]
+  tickets        Ticket[]
+  auditLogs      AuditLog[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@unique([organizationId, assetTag])
+  @@unique([organizationId, serialNumber])
+}
+
+model AssetAssignment {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assetId        String
+  userId         String
+  assignedBy     String
+  assignmentDate DateTime     @default(now())
+  returnDate     DateTime?
+  notes          String?
+  asset          Asset        @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model MaintenanceRecord {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assetId        String
+  performedBy    String
+  serviceDate    DateTime     @default(now())
+  description    String
+  cost           Float
+  status         String       // Scheduled, In_Progress, Completed
+  asset          Asset        @relation(fields: [assetId], references: [id], onDelete: Cascade)
+}
+
+model Ticket {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assetId        String
+  userId         String
+  title          String
+  description    String
+  priority       String       // Low, Medium, High, Critical
+  status         String       // Open, In_Progress, Resolved
+  createdAt      DateTime     @default(now())
+  asset          Asset        @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id             String        @id @default(uuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assetId        String?
+  userId         String
+  userRole       String
+  action         String
+  details        String
+  createdAt      DateTime      @default(now())
+  asset          Asset?        @relation(fields: [assetId], references: [id], onDelete: SetNull)
+}

@@ -1,0 +1,18 @@
+# Render Blueprint — Assetorbit (Express API + built React frontend, one process)
+# Docs: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: assetorbit
+    runtime: node
+    plan: free
+    healthCheckPath: /api/health
+    # Build the server (typecheck + compile) and the client (Vite), in that order.
+    # The server serves client/dist as static files at runtime.
+    buildCommand: cd server && npm ci && npm run build && cd ../client && npm ci && npm run build
+    startCommand: node server/dist/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Generate a strong random JWT signing secret once at service creation.
+      - key: JWT_SECRET
+        generateValue: true
