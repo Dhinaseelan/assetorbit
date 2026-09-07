@@ -8,7 +8,9 @@ services:
     healthCheckPath: /api/health
     # Build the server (typecheck + compile) and the client (Vite), in that order.
     # The server serves client/dist as static files at runtime.
-    buildCommand: cd server && npm ci && npm run build && cd ../client && npm ci && npm run build
+    # Note: --include=dev is required because Render sets NODE_ENV=production,
+    # which makes npm skip devDependencies (@types, typescript) by default.
+    buildCommand: cd server && npm ci --include=dev && npm run build && cd ../client && npm ci --include=dev && npm run build
     startCommand: node server/dist/index.js
     envVars:
       - key: NODE_ENV
