@@ -11,7 +11,10 @@ services:
     # Note: --include=dev is required because Render sets NODE_ENV=production,
     # which makes npm skip devDependencies (@types, typescript) by default.
     buildCommand: cd server && npm ci --include=dev && npm run build && cd ../client && npm ci --include=dev && npm run build
-    startCommand: node server/dist/index.js
+    # Create/update the SQLite tables on every boot (idempotent), then start.
+    # Required because free instances have ephemeral disks: the DB file (and
+    # its tables) are recreated from the schema after each restart.
+    startCommand: cd server && npx prisma db push && cd .. && node server/dist/index.js
     envVars:
       - key: NODE_ENV
         value: production
